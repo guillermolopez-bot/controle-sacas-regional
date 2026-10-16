@@ -8,7 +8,7 @@
   //   TOKEN:   el mismo valor que pusiste en Code.gs.
   // ---------------------------------------------------------------------
   var CONFIG = {
-    API_URL: '',
+    API_URL: 'https://script.google.com/a/macros/mercadolibre.com.mx/s/AKfycbyvaCwVU7W9GQBMsmMN3JomB-8H0MeF417UHGun1g4_-ZKq21IN-x9lMIFlg6X8Jk1iAw/exec',
     TOKEN: 'a63f009e24790fc48f6d1f95',
     TIMEOUT_MS: 15000,
     BLOQUEAR_SI_NO_COINCIDE: false,  // true = no deja enviar si las sacas recolectadas no coinciden con las recibidas
