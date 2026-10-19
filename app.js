@@ -8,7 +8,7 @@
   //   TOKEN:   el mismo valor que pusiste en Code.gs.
   // ---------------------------------------------------------------------
   var CONFIG = {
-    API_URL: '',
+    API_URL: 'https://script.google.com/macros/s/AKfycbzAJJA0VtLOi-hNv0b903W5Q0dG76jvx9JfzGG-dcmXeeBx-_Ay9bT6JsG1vqrlF4yU/exec',
     TOKEN: 'a63f009e24790fc48f6d1f95',
     TIMEOUT_MS: 15000,               // lecturas (catálogo, nodos)
     TIMEOUT_POST_MS: 30000,          // envío de un registro (Apps Script puede tardar en guardarlo)
