@@ -10,7 +10,8 @@
   var CONFIG = {
     API_URL: 'AKfycbzAJJA0VtLOi-hNv0b903W5Q0dG76jvx9JfzGG-dcmXeeBx-_Ay9bT6JsG1vqrlF4yU',
     TOKEN: 'a63f009e24790fc48f6d1f95',
-    TIMEOUT_MS: 15000,
+    TIMEOUT_MS: 15000,               // lecturas (catálogo, nodos)
+    TIMEOUT_POST_MS: 30000,          // envío de un registro (Apps Script puede tardar en guardarlo)
     BLOQUEAR_SI_NO_COINCIDE: false,  // true = no deja enviar si las sacas recolectadas no coinciden con las recibidas
     COMPARAR_CONTRA: 'ACUM'          // con qué volumen se compara lo recolectado: 'ACUM' (acumulado de la ventana, hoy 4 días) o 'D1' (ayer)
   };
@@ -83,6 +84,10 @@
       e_servidor: 'El servidor no aceptó el registro. Recarga la página y vuelve a intentarlo.',
       ok_titulo: 'Registro enviado', pend_titulo: 'Registro guardado en este teléfono',
       pend_nota: 'No hay conexión. Se enviará solo cuando vuelva el internet.',
+      pend_nota_contacto: 'No se pudo contactar al servidor. Se guardó en este teléfono y se enviará solo.',
+      pend_nota_tiempo: 'El servidor tardó demasiado en responder. Se guardó en este teléfono y se enviará solo.',
+      pend_nota_servidor: 'El servidor respondió con un error. Se guardó en este teléfono y se enviará solo.',
+      pend_codigo: 'Código: {c}', pend_ultimo: 'Último intento: {c}',
       r_site: 'SVC', r_nodo: 'Nodo', r_sacas: 'Recolectadas', r_ref: 'Recibió',
       ref_valor: '{a} ayer, {b} en {d} días', r_vs: 'Contra lo recibido',
       vs_ok: 'Coincide con las {m} recibidas {r}', vs_menos: '{n} menos que las {m} recibidas {r}', vs_mas: '{n} más que las {m} recibidas {r}',
@@ -117,6 +122,10 @@
       e_servidor: 'O servidor não aceitou o registro. Recarregue a página e tente novamente.',
       ok_titulo: 'Registro enviado', pend_titulo: 'Registro salvo neste celular',
       pend_nota: 'Sem conexão. Será enviado automaticamente quando a internet voltar.',
+      pend_nota_contacto: 'Não foi possível contatar o servidor. Salvo neste celular; será enviado automaticamente.',
+      pend_nota_tiempo: 'O servidor demorou demais para responder. Salvo neste celular; será enviado automaticamente.',
+      pend_nota_servidor: 'O servidor respondeu com erro. Salvo neste celular; será enviado automaticamente.',
+      pend_codigo: 'Código: {c}', pend_ultimo: 'Última tentativa: {c}',
       r_site: 'SVC', r_nodo: 'Nodo', r_sacas: 'Coletadas', r_ref: 'Recebeu',
       ref_valor: '{a} ontem, {b} em {d} dias', r_vs: 'Contra o recebido',
       vs_ok: 'Confere com as {m} recebidas {r}', vs_menos: '{n} a menos das {m} recebidas {r}', vs_mas: '{n} a mais das {m} recebidas {r}',
@@ -218,10 +227,10 @@
   function ordenNatural(a, b) { return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }); }
 
   // Petición con tiempo límite. Rechaza ante fallo de red, HTTP != 200 o respuesta que no sea JSON.
-  function pedir(url, opciones) {
+  function pedir(url, opciones, ms) {
     opciones = opciones || {};
     var ctl = typeof AbortController === 'function' ? new AbortController() : null;
-    var timer = ctl ? setTimeout(function () { ctl.abort(); }, CONFIG.TIMEOUT_MS) : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, ms || CONFIG.TIMEOUT_MS) : null;
     if (ctl) opciones.signal = ctl.signal;
     return fetch(url, opciones)
       .then(function (r) {
@@ -322,6 +331,21 @@
     });
   }
 
+  // Explica por qué falló un envío: sin red, sin respuesta, tiempo agotado o error del servidor.
+  function clasificarFallo(e) {
+    var nombre = e && e.name, msg = (e && e.message) || '', m = /^http (\d+)/.exec(msg);
+    if (nombre === 'AbortError') return { tipo: 'tiempo', cod: 'TIMEOUT' };
+    if (m) return { tipo: 'servidor', cod: 'HTTP ' + m[1] };
+    if (nombre === 'SyntaxError') return { tipo: 'servidor', cod: 'RESPUESTA NO VALIDA' };
+    if (navigator.onLine === false) return { tipo: 'red', cod: 'SIN RED' };
+    return { tipo: 'contacto', cod: 'SIN RESPUESTA' };
+  }
+
+  // Errores del servidor que no son culpa del dato: el registro debe quedar en cola y reintentarse
+  function esTransitorio(res) {
+    return !!res && res.ok !== true && (res.error === 'ocupado' || res.error === 'interno');
+  }
+
   // Resuelve {ok:true} si se guardó, {ok:false,error} si el servidor lo rechazó.
   // Rechaza (catch) solo ante problemas de red: esos casos se encolan.
   function enviarRegistro(reg) {
@@ -340,7 +364,7 @@
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: cuerpo
-    });
+    }, CONFIG.TIMEOUT_POST_MS);
   }
 
   // ---------------------------------------------------------------------
@@ -384,6 +408,7 @@
   var sheetModo = 'site';          // site | nodo
   var enviando = false;
   var vaciando = false;
+  var ultimoFallo = '';            // código del último intento fallido de enviar la cola (para diagnóstico)
   var focoPrevio = null;
 
   // ---------------------------------------------------------------------
@@ -854,7 +879,7 @@
   function pintarPendientes() {
     var n = leer(LS.cola, []).length;
     el.pendientes.hidden = n === 0;
-    if (n) el.pendientesTexto.textContent = n === 1 ? t('pend_1') : t('pend_n', { n: n });
+    if (n) el.pendientesTexto.textContent = (n === 1 ? t('pend_1') : t('pend_n', { n: n })) + (ultimoFallo ? ' (' + t('pend_ultimo', { c: ultimoFallo }) + ')' : '');
   }
 
   // Solo se guardan y se muestran los registros de HOY (la lista vive en el teléfono; no se descarga de internet).
@@ -911,26 +936,37 @@
       var reg = cola[0];
       enviarRegistro(reg)
         .then(function (res) {
+          if (esTransitorio(res)) {          // el servidor falló: se conserva en la cola y se reintenta después
+            ultimoFallo = String(res.error).toUpperCase() + (res.detalle ? ': ' + String(res.detalle).slice(0, 60) : '');
+            vaciando = false; pintarPendientes(); return;
+          }
+          ultimoFallo = '';
           marcarHist(reg.id, res && res.ok === true ? 'enviado' : 'rechazado');
           guardar(LS.cola, leer(LS.cola, []).slice(1));
           pintarPendientes();
           pintarHist();
           siguiente();
         })
-        .catch(function () { vaciando = false; pintarPendientes(); });
+        .catch(function (e) { ultimoFallo = clasificarFallo(e).cod; vaciando = false; pintarPendientes(); });
     })();
   }
 
   // ---------------------------------------------------------------------
   // Envío
   // ---------------------------------------------------------------------
-  function mostrarExito(reg, estado) {
+  function mostrarExito(reg, estado, fallo) {
     var pendiente = estado === 'pendiente';
     var p = paisPorCodigo(reg.pais);
     el.exitoIcono.classList.toggle('is-pending', pendiente);
     el.exitoTitulo.textContent = pendiente ? t('pend_titulo') : t('ok_titulo');
     el.exitoNota.hidden = !pendiente;
-    el.exitoNota.textContent = pendiente ? t('pend_nota') : '';
+    var nota = '';
+    if (pendiente) {
+      var tipo = fallo ? fallo.tipo : 'red';
+      nota = t(tipo === 'tiempo' ? 'pend_nota_tiempo' : tipo === 'servidor' ? 'pend_nota_servidor' : tipo === 'contacto' ? 'pend_nota_contacto' : 'pend_nota');
+      if (fallo && fallo.tipo !== 'red') nota += ' (' + t('pend_codigo', { c: fallo.cod }) + ')';
+    }
+    el.exitoNota.textContent = nota;
     el.rSite.textContent = reg.site + (p ? ' (' + p.nombre + ')' : '');
     el.rNodo.textContent = reg.nodo;
     el.rSacas.textContent = String(reg.sacas);
@@ -968,18 +1004,28 @@
     enviarRegistro(reg)
       .then(function (res) {
         if (res && res.ok === true) {
+          ultimoFallo = '';
           guardarHist(reg, 'enviado');
           mostrarExito(reg, 'enviado');
+        } else if (esTransitorio(res)) {
+          // El servidor falló por su cuenta: no se pierde el dato, se guarda y se reintenta
+          ultimoFallo = String(res.error).toUpperCase() + (res.detalle ? ': ' + String(res.detalle).slice(0, 60) : '');
+          encolar(reg);
+          guardarHist(reg, 'pendiente');
+          mostrarExito(reg, 'pendiente', { tipo: 'servidor', cod: ultimoFallo });
         } else {
-          el.erroGeral.textContent = t('e_servidor');
+          // El servidor rechazó el dato (campos, sacas, SVC, token...): se muestra el motivo
+          el.erroGeral.textContent = t('e_servidor') + ' (' + String((res && res.error) || 'sin detalle') + ')';
           el.erroGeral.hidden = false;
         }
       })
-      .catch(function () {
-        // Sin red o sin respuesta: se guarda localmente y se reenvía después
+      .catch(function (e) {
+        // Sin red, sin respuesta, tiempo agotado o error del servidor: se guarda en el teléfono y se reenvía después
+        var fallo = clasificarFallo(e);
+        ultimoFallo = fallo.cod;
         encolar(reg);
         guardarHist(reg, 'pendiente');
-        mostrarExito(reg, 'pendiente');
+        mostrarExito(reg, 'pendiente', fallo);
       })
       .then(function () {
         setCargando(false);
