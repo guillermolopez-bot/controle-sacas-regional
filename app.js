@@ -8,11 +8,11 @@
   //   TOKEN:   el mismo valor que pusiste en Code.gs.
   // ---------------------------------------------------------------------
   var CONFIG = {
-    API_URL: 'https://script.google.com/macros/s/AKfycbzAJJA0VtLOi-hNv0b903W5Q0dG76jvx9JfzGG-dcmXeeBx-_Ay9bT6JsG1vqrlF4yU/exec',
+    API_URL: '',
     TOKEN: 'a63f009e24790fc48f6d1f95',
     TIMEOUT_MS: 15000,
     BLOQUEAR_SI_NO_COINCIDE: false,  // true = no deja enviar si las sacas recolectadas no coinciden con las recibidas
-    COMPARAR_CONTRA: '3D'            // con qué volumen se compara lo recolectado: '3D' (últimos 3 días) o 'D1' (ayer)
+    COMPARAR_CONTRA: 'ACUM'          // con qué volumen se compara lo recolectado: 'ACUM' (acumulado de la ventana, hoy 4 días) o 'D1' (ayer)
   };
 
   var MAX_SACAS = 1000;
@@ -51,7 +51,6 @@
     MCO: 'SAN1,SBL1,SBO1,SBY1,SCI1,SRI1,STI1,SVA1'
   };
 
-  var CARRIERS_BASE = ['DHL', 'FedEx', 'Estafeta', 'Redpack', 'UPS', 'Paquetexpress', '99minutos', 'Otro'];
 
   // ---------------------------------------------------------------------
   // IDIOMAS: español (base), portugués de Brasil, y pequeños ajustes regionales
@@ -66,28 +65,26 @@
       pais: 'País', pais_auto: 'Detectado automáticamente. Toca otro país para cambiarlo.',
       site: 'SVC', site_sel: 'Selecciona tu SVC', site_titulo: 'Selecciona tu SVC', site_buscar: 'Buscar SVC',
       site_cuenta: '{n} SVC', site_sin: 'Sin resultados', cerrar: 'Cerrar',
-      carrier: 'Carrier', carrier_sel: 'Selecciona un carrier', carrier_cargando: 'Cargando carriers…', carrier_error: 'Error al cargar carriers',
       nodo: 'Nodo', nodo_sel: 'Selecciona el nodo', nodo_primero: 'Primero elige el SVC', nodo_cargando: 'Cargando nodos…',
       nodo_reintentar: 'No se pudo cargar. Toca para reintentar', nodo_titulo: 'Selecciona el nodo', nodo_buscar: 'Buscar nodo',
-      nodo_cuenta: '{n} nodos', nodo_usar: 'Usar “{q}”', nodo_hoy: 'Hoy', lista_extra: 'Ayer {a} · 3 días {b}',
-      nodos_vacio: 'Este SVC no tiene nodos con sacas en los últimos 3 días. Puedes escribir el nodo.',
+      nodo_cuenta: '{n} nodos', nodo_usar: 'Usar “{q}”', nodo_hoy: 'Hoy', lista_extra: 'Ayer {a} · {d} días {b}',
+      nodos_vacio: 'Este SVC no tiene nodos con sacas en los últimos {d} días. Puedes escribir el nodo.',
       e_nodos: 'No se pudo cargar la lista de nodos. Toca el campo para reintentar.',
       nodo_sin_datos: 'No hay volúmenes de este nodo. Registra lo que recolectes.',
-      nodo_recibio: 'Sacas que recibió este nodo', ayer: 'Ayer', tres_dias: 'Últimos 3 días',
+      nodo_recibio: 'Sacas que recibió este nodo', ayer: 'Ayer', dias_acum: 'Últimos {d} días',
       corte: 'Volúmenes al {f}', corte_viejo: 'Volúmenes desactualizados: al {f}',
       sacas: 'Sacas recolectadas', sacas_hint: 'Solo números, de 1 a {max}.', menos: 'Restar una saca', mas: 'Sumar una saca',
       enviar: 'Enviar registro',
-      ref_d1: 'ayer', ref_3d: 'en los últimos 3 días',
+      ref_d1: 'ayer', ref_acum: 'en los últimos {d} días',
       cmp_ok: 'Coincide con las sacas recibidas {r}.', cmp_menos: 'Faltan {n} respecto a las {m} recibidas {r}.', cmp_mas: 'Hay {n} de más respecto a las {m} recibidas {r}.',
       e_no_coincide: 'La cantidad no coincide con las {m} sacas recibidas {r}. Revísala.',
-      e_pais: 'Selecciona un país.', e_site: 'Selecciona tu SVC.', e_nodo: 'Selecciona el nodo.', e_carrier: 'Selecciona un carrier.',
+      e_pais: 'Selecciona un país.', e_site: 'Selecciona tu SVC.', e_nodo: 'Selecciona el nodo.',
       e_sacas: 'Escribe la cantidad de sacas (solo números).', e_rango: 'La cantidad debe ser de 1 a {max}.',
       e_servidor: 'El servidor no aceptó el registro. Recarga la página y vuelve a intentarlo.',
-      e_catalogo: 'No se pudo cargar la lista de carriers. Revisa la conexión y recarga la página.',
       ok_titulo: 'Registro enviado', pend_titulo: 'Registro guardado en este teléfono',
       pend_nota: 'No hay conexión. Se enviará solo cuando vuelva el internet.',
-      r_site: 'SVC', r_carrier: 'Carrier', r_nodo: 'Nodo', r_sacas: 'Recolectadas', r_ref: 'Recibió',
-      ref_valor: '{a} ayer, {b} en 3 días', r_vs: 'Contra lo recibido',
+      r_site: 'SVC', r_nodo: 'Nodo', r_sacas: 'Recolectadas', r_ref: 'Recibió',
+      ref_valor: '{a} ayer, {b} en {d} días', r_vs: 'Contra lo recibido',
       vs_ok: 'Coincide con las {m} recibidas {r}', vs_menos: '{n} menos que las {m} recibidas {r}', vs_mas: '{n} más que las {m} recibidas {r}',
       r_folio: 'Folio', nuevo: 'Nuevo registro',
       recientes: 'Últimos registros', hoy: 'Hoy: {n}',
@@ -102,28 +99,26 @@
       pais: 'País', pais_auto: 'Detectado automaticamente. Toque em outro país para mudar.',
       site: 'SVC', site_sel: 'Selecione seu SVC', site_titulo: 'Selecione seu SVC', site_buscar: 'Buscar SVC',
       site_cuenta: '{n} SVC', site_sin: 'Nenhum resultado', cerrar: 'Fechar',
-      carrier: 'Carrier', carrier_sel: 'Selecione um carrier', carrier_cargando: 'Carregando carriers…', carrier_error: 'Erro ao carregar carriers',
       nodo: 'Nodo', nodo_sel: 'Selecione o nodo', nodo_primero: 'Escolha o SVC primeiro', nodo_cargando: 'Carregando nodos…',
       nodo_reintentar: 'Não foi possível carregar. Toque para tentar de novo', nodo_titulo: 'Selecione o nodo', nodo_buscar: 'Buscar nodo',
-      nodo_cuenta: '{n} nodos', nodo_usar: 'Usar “{q}”', nodo_hoy: 'Hoje', lista_extra: 'Ontem {a} · 3 dias {b}',
-      nodos_vacio: 'Este SVC não tem nodos com sacas nos últimos 3 dias. Você pode digitar o nodo.',
+      nodo_cuenta: '{n} nodos', nodo_usar: 'Usar “{q}”', nodo_hoy: 'Hoje', lista_extra: 'Ontem {a} · {d} dias {b}',
+      nodos_vacio: 'Este SVC não tem nodos com sacas nos últimos {d} dias. Você pode digitar o nodo.',
       e_nodos: 'Não foi possível carregar a lista de nodos. Toque no campo para tentar de novo.',
       nodo_sin_datos: 'Não há volumes deste nodo. Registre o que coletar.',
-      nodo_recibio: 'Sacas que este nodo recebeu', ayer: 'Ontem', tres_dias: 'Últimos 3 dias',
+      nodo_recibio: 'Sacas que este nodo recebeu', ayer: 'Ontem', dias_acum: 'Últimos {d} dias',
       corte: 'Volumes em {f}', corte_viejo: 'Volumes desatualizados: em {f}',
       sacas: 'Sacas coletadas', sacas_hint: 'Somente números, de 1 a {max}.', menos: 'Tirar uma saca', mas: 'Somar uma saca',
       enviar: 'Enviar registro',
-      ref_d1: 'ontem', ref_3d: 'nos últimos 3 dias',
+      ref_d1: 'ontem', ref_acum: 'nos últimos {d} dias',
       cmp_ok: 'Confere com as sacas recebidas {r}.', cmp_menos: 'Faltam {n} em relação às {m} recebidas {r}.', cmp_mas: 'Há {n} a mais em relação às {m} recebidas {r}.',
       e_no_coincide: 'A quantidade não confere com as {m} sacas recebidas {r}. Revise.',
-      e_pais: 'Selecione um país.', e_site: 'Selecione seu SVC.', e_nodo: 'Selecione o nodo.', e_carrier: 'Selecione um carrier.',
+      e_pais: 'Selecione um país.', e_site: 'Selecione seu SVC.', e_nodo: 'Selecione o nodo.',
       e_sacas: 'Digite a quantidade de sacas (somente números).', e_rango: 'A quantidade deve ser de 1 a {max}.',
       e_servidor: 'O servidor não aceitou o registro. Recarregue a página e tente novamente.',
-      e_catalogo: 'Não foi possível carregar a lista de carriers. Verifique a conexão e recarregue a página.',
       ok_titulo: 'Registro enviado', pend_titulo: 'Registro salvo neste celular',
       pend_nota: 'Sem conexão. Será enviado automaticamente quando a internet voltar.',
-      r_site: 'SVC', r_carrier: 'Carrier', r_nodo: 'Nodo', r_sacas: 'Coletadas', r_ref: 'Recebeu',
-      ref_valor: '{a} ontem, {b} em 3 dias', r_vs: 'Contra o recebido',
+      r_site: 'SVC', r_nodo: 'Nodo', r_sacas: 'Coletadas', r_ref: 'Recebeu',
+      ref_valor: '{a} ontem, {b} em {d} dias', r_vs: 'Contra o recebido',
       vs_ok: 'Confere com as {m} recebidas {r}', vs_menos: '{n} a menos das {m} recebidas {r}', vs_mas: '{n} a mais das {m} recebidas {r}',
       r_folio: 'Protocolo', nuevo: 'Novo registro',
       recientes: 'Últimos registros', hoy: 'Hoje: {n}',
@@ -133,17 +128,15 @@
     'es-AR': {
       pais_auto: 'Detectado automáticamente. Tocá otro país para cambiarlo.',
       site_sel: 'Seleccioná tu SVC', site_titulo: 'Seleccioná tu SVC', site_buscar: 'Buscá un SVC',
-      carrier_sel: 'Seleccioná un carrier',
       nodo_sel: 'Seleccioná el nodo', nodo_primero: 'Primero elegí el SVC', nodo_titulo: 'Seleccioná el nodo', nodo_buscar: 'Buscá un nodo',
       nodo_reintentar: 'No se pudo cargar. Tocá para reintentar',
-      nodos_vacio: 'Este SVC no tiene nodos con sacas en los últimos 3 días. Podés escribir el nodo.',
+      nodos_vacio: 'Este SVC no tiene nodos con sacas en los últimos {d} días. Podés escribir el nodo.',
       e_nodos: 'No se pudo cargar la lista de nodos. Tocá el campo para reintentar.',
       nodo_sin_datos: 'No hay volúmenes de este nodo. Registrá lo que recolectes.',
-      e_pais: 'Seleccioná un país.', e_site: 'Seleccioná tu SVC.', e_nodo: 'Seleccioná el nodo.', e_carrier: 'Seleccioná un carrier.',
+      e_pais: 'Seleccioná un país.', e_site: 'Seleccioná tu SVC.', e_nodo: 'Seleccioná el nodo.',
       e_sacas: 'Escribí la cantidad de sacas (solo números).',
       e_no_coincide: 'La cantidad no coincide con las {m} sacas recibidas {r}. Revisala.',
       e_servidor: 'El servidor no aceptó el registro. Recargá la página y volvé a intentarlo.',
-      e_catalogo: 'No se pudo cargar la lista de carriers. Revisá la conexión y recargá la página.',
       pend_titulo: 'Registro guardado en este celular'
     },
     'es-MX': { pend_titulo: 'Registro guardado en este celular' },
@@ -168,6 +161,7 @@
     return s.replace(/\{(\w+)\}/g, function (m, n) {
       if (v[n] !== undefined) return String(v[n]);
       if (n === 'max') return String(MAX_SACAS);
+      if (n === 'd') return String(nodosDias);
       return m;
     });
   }
@@ -175,7 +169,7 @@
   // ---------------------------------------------------------------------
   // Utilidades
   // ---------------------------------------------------------------------
-  var LS = { pais: 'reg.pais', site: 'reg.site', carrier: 'reg.carrier', cola: 'reg.cola3', hist: 'reg.hist3', cat: 'reg.catalogo5', nodos: 'reg.nodos.' };
+  var LS = { pais: 'reg.pais', site: 'reg.site', cola: 'reg.cola4', hist: 'reg.hist4', cat: 'reg.catalogo6', nodos: 'reg.nodos.' };
   var DEMO = !CONFIG.API_URL;
   // Sin API_URL la app NO funciona (para que nadie crea que está guardando). Para probar el diseño: agrega ?demo=1 al enlace.
   var DEMO_PERMITIDO = /[?&]demo=1(&|$)/.test(window.location.search);
@@ -286,22 +280,21 @@
     return out;
   }
 
+  // El catálogo solo trae los SVC (solo orígenes con datos). Si no se puede cargar, se usa la lista incluida en la app.
   function cargarCatalogo() {
-    if (DEMO) return atraso(400).then(function () { return { carriers: CARRIERS_BASE, sites: sitesBase() }; });
+    if (DEMO) return atraso(400).then(function () { return { sites: sitesBase() }; });
     var url = CONFIG.API_URL + '?action=catalogo&token=' + encodeURIComponent(CONFIG.TOKEN);
     return pedir(url).then(function (r) {
-      if (!r || r.ok !== true || !r.carriers) throw new Error('catalogo');
-      var cat = { carriers: r.carriers, sites: r.sites || null };
+      if (!r || r.ok !== true) throw new Error('catalogo');
+      var cat = { sites: r.sites || null };
       guardar(LS.cat, cat);
       return cat;
-    }).catch(function (e) {
-      var cache = leer(LS.cat, null);
-      if (cache) return cache; // sin conexión: usa el último catálogo conocido
-      throw e;
+    }).catch(function () {
+      return leer(LS.cat, null) || { sites: null }; // sin conexión: último catálogo conocido, o la lista incluida
     });
   }
 
-  // Nodos que recibieron sacas desde un SVC, con volúmenes de ayer (d1) y de los últimos 3 días (t3)
+  // Nodos que recibieron sacas desde un SVC, con volúmenes de ayer (d1) y del acumulado de la ventana de días (t3)
   function demoNodos(svc) {
     var h = 0, i;
     for (i = 0; i < svc.length; i++) h = (h * 31 + svc.charCodeAt(i)) % 997;
@@ -311,7 +304,7 @@
       nodos.push({ id: 'DEMO-' + svc + '-' + (i + 1), tipo: 'NODE', d1: d1, t3: d1 + ((h + i * 11) % 40) + 1 });
     }
     nodos.sort(function (a, b) { return (b.d1 - a.d1) || (b.t3 - a.t3); });
-    return { nodos: nodos, corte: hoyISO() };
+    return { nodos: nodos, corte: hoyISO(), dias: 4 };
   }
 
   function obtenerNodos(svc) {
@@ -319,7 +312,7 @@
     var url = CONFIG.API_URL + '?action=nodos&svc=' + encodeURIComponent(svc) + '&token=' + encodeURIComponent(CONFIG.TOKEN);
     return pedir(url).then(function (r) {
       if (!r || r.ok !== true || !r.nodos) throw new Error('nodos');
-      var out = { nodos: r.nodos, corte: r.corte || '' };
+      var out = { nodos: r.nodos, corte: r.corte || '', dias: Number(r.dias) || 4 };
       guardar(LS.nodos + svc, out);
       return out;
     }).catch(function (e) {
@@ -338,7 +331,6 @@
       id: reg.id,
       pais: reg.pais,
       site: reg.site,
-      carrier: reg.carrier,
       nodo: reg.nodo,
       sacas: reg.sacas,
       creado: reg.creado
@@ -356,15 +348,15 @@
   // ---------------------------------------------------------------------
   var el = {
     form: $('form'), paises: $('paises'), paisNota: $('pais-nota'), siteBtn: $('site-btn'),
-    carrier: $('carrier'), nodoBtn: $('nodo-btn'), sacas: $('sacas'),
+    nodoBtn: $('nodo-btn'), sacas: $('sacas'),
     enviar: $('enviar'), menos: $('menos'), mas: $('mas'),
     erroGeral: $('erro-geral'), erroCatalogo: $('erro-catalogo'),
-    paisErr: $('pais-error'), siteErr: $('site-error'), carrierErr: $('carrier-error'),
+    paisErr: $('pais-error'), siteErr: $('site-error'),
     nodoErr: $('nodo-error'), sacasErr: $('sacas-error'), nodoNota: $('nodo-nota'),
-    nodoInfo: $('nodo-info'), nodoD1: $('nodo-d1'), nodo3d: $('nodo-3d'), nodoCorte: $('nodo-corte'), cmp: $('cmp'),
+    nodoInfo: $('nodo-info'), nodoD1: $('nodo-d1'), nodo3d: $('nodo-3d'), nodoLblAcum: $('nodo-lbl-acum'), nodoCorte: $('nodo-corte'), cmp: $('cmp'),
     formCard: $('form-card'), exitoCard: $('sucesso-card'),
     exitoIcono: $('exito-icono'), exitoTitulo: $('exito-titulo'), exitoNota: $('exito-nota'),
-    rSite: $('resumo-site'), rCarrier: $('resumo-carrier'), rNodo: $('resumo-nodo'), rSacas: $('resumo-sacas'),
+    rSite: $('resumo-site'), rNodo: $('resumo-nodo'), rSacas: $('resumo-sacas'),
     filaRef: $('fila-ref'), rRef: $('resumo-ref'), filaVs: $('fila-vs'), rVs: $('resumo-vs'), rId: $('resumo-id'),
     novo: $('novo'),
     estadoTag: $('estado-tag'), footer: $('footer-texto'),
@@ -372,21 +364,19 @@
     recientes: $('recientes'), recientesLista: $('recientes-lista'), recientesHoy: $('recientes-hoy'),
     sheet: $('sheet'), sheetTitle: $('sheet-title'), sheetBackdrop: $('sheet-backdrop'), sheetClose: $('sheet-close'),
     siteBuscar: $('site-buscar'), siteCuenta: $('site-cuenta'), siteLista: $('site-lista'),
-    segPais: $('seg-pais'), segSite: $('seg-site'), segCarrier: $('seg-carrier'), segNodo: $('seg-nodo'), segSacas: $('seg-sacas')
+    segPais: $('seg-pais'), segSite: $('seg-site'), segNodo: $('seg-nodo'), segSacas: $('seg-sacas')
   };
 
-  var carriersPermitidos = [];
   var sitesPorPais = sitesBase();
   Object.keys(sitesPorPais).forEach(function (k) { sitesPorPais[k].sort(ordenNatural); });
 
   var paisActual = '';
   var paisAuto = false;            // true si el país se detectó solo y la persona no lo ha cambiado
   var siteActual = '';             // SVC
-  var carrierGuardado = '';
-  var catalogoEstado = 'cargando'; // cargando | listo | error
 
   var nodosEstado = 'inactivo';    // inactivo | cargando | listo | vacio | error
   var nodosLista = [];
+  var nodosDias = 4;               // ventana de días del acumulado (la reporta el servidor: SACAS_4D -> 4)
   var nodosCorte = '';
   var nodosPeticion = 0;           // evita que una respuesta lenta pise a una más nueva
   var nodoActual = null;           // { id, d1, t3 }  (d1 y t3 son null si el nodo se escribió a mano)
@@ -399,12 +389,6 @@
   // ---------------------------------------------------------------------
   // Idioma
   // ---------------------------------------------------------------------
-  function textoPrimeraOpcion() {
-    var o = el.carrier.options[0];
-    if (!o) return;
-    o.textContent = t(catalogoEstado === 'listo' ? 'carrier_sel' : catalogoEstado === 'error' ? 'carrier_error' : 'carrier_cargando');
-  }
-
   function pintarPaisNota() {
     el.paisNota.hidden = !(paisAuto && paisActual);
     el.paisNota.textContent = t('pais_auto');
@@ -430,8 +414,6 @@
     qsa('[data-i18n-ph]').forEach(function (n) { n.setAttribute('placeholder', t(n.getAttribute('data-i18n-ph'))); });
     qsa('[data-i18n-aria]').forEach(function (n) { n.setAttribute('aria-label', t(n.getAttribute('data-i18n-aria'))); });
 
-    textoPrimeraOpcion();
-    if (catalogoEstado === 'error') el.erroCatalogo.textContent = t('e_catalogo');
     pintarPaisNota();
     pintarSiteBtn();
     pintarNodoBtn();
@@ -522,6 +504,7 @@
         if (mia !== nodosPeticion) return;
         nodosLista = r.nodos || [];
         nodosCorte = r.corte || '';
+        nodosDias = Number(r.dias) || 4;
         nodosEstado = nodosLista.length ? 'listo' : 'vacio';
       })
       .catch(function () {
@@ -581,6 +564,7 @@
     if (!tiene) return;
     el.nodoD1.textContent = String(n.d1);
     el.nodo3d.textContent = String(n.t3);
+    el.nodoLblAcum.textContent = t('dias_acum');
     var viejo = nodosCorte && corteViejo(nodosCorte);
     el.nodoCorte.hidden = !nodosCorte;
     el.nodoCorte.classList.toggle('is-viejo', !!viejo);
@@ -609,7 +593,7 @@
     var n = nodoActual;
     if (!n || typeof n.d1 !== 'number') return null;
     var d1 = CONFIG.COMPARAR_CONTRA === 'D1';
-    return { valor: d1 ? n.d1 : n.t3, r: t(d1 ? 'ref_d1' : 'ref_3d') };
+    return { valor: d1 ? n.d1 : n.t3, r: t(d1 ? 'ref_d1' : 'ref_acum') };
   }
 
   function textoComparacion(sacas, ref, claves) {
@@ -741,16 +725,7 @@
   // ---------------------------------------------------------------------
   // Catálogo y formulario
   // ---------------------------------------------------------------------
-  function opcion(valor, texto) {
-    var o = document.createElement('option');
-    o.value = valor;
-    o.textContent = texto;
-    return o;
-  }
-
   function pintarCatalogo(cat) {
-    carriersPermitidos = cat.carriers.slice();
-
     // Si el servidor trae SVC, reemplazan a los del Excel
     if (cat.sites) {
       var total = 0;
@@ -762,15 +737,6 @@
       }
     }
 
-    var frag = document.createDocumentFragment();
-    frag.appendChild(opcion('', ''));
-    carriersPermitidos.forEach(function (c) { frag.appendChild(opcion(c, c)); });
-    el.carrier.replaceChildren(frag);
-    el.carrier.disabled = false;
-    if (carrierGuardado && carriersPermitidos.indexOf(carrierGuardado) !== -1) el.carrier.value = carrierGuardado;
-
-    catalogoEstado = 'listo';
-    textoPrimeraOpcion();
     pintarSiteBtn();
   }
 
@@ -782,7 +748,6 @@
   function actualizarAvance() {
     el.segPais.classList.toggle('is-on', !!paisActual);
     el.segSite.classList.toggle('is-on', !!siteActual);
-    el.segCarrier.classList.toggle('is-on', el.carrier.value !== '');
     el.segNodo.classList.toggle('is-on', !!nodoActual);
     el.segSacas.classList.toggle('is-on', sacasValidas());
     pintarComparacion();
@@ -801,16 +766,15 @@
   }
 
   function limpiarErrores() {
-    [el.paisErr, el.siteErr, el.carrierErr, el.nodoErr, el.sacasErr, el.erroGeral].forEach(function (n) {
+    [el.paisErr, el.siteErr, el.nodoErr, el.sacasErr, el.erroGeral].forEach(function (n) {
       n.hidden = true; n.textContent = '';
     });
-    [el.siteBtn, el.carrier, el.nodoBtn, el.sacas].forEach(function (c) { c.removeAttribute('aria-invalid'); });
+    [el.siteBtn, el.nodoBtn, el.sacas].forEach(function (c) { c.removeAttribute('aria-invalid'); });
     el.paises.classList.remove('is-invalid');
   }
 
   function validar() {
     var ok = true;
-    var carrier = el.carrier.value;
     var n = el.sacas.value;
     var primero = null;
 
@@ -822,10 +786,6 @@
     if (!siteActual || (sitesPorPais[paisActual] || []).indexOf(siteActual) === -1) {
       marcarError(el.siteBtn, el.siteErr, t('e_site'));
       primero = primero || el.siteBtn; ok = false;
-    }
-    if (carriersPermitidos.indexOf(carrier) === -1) {
-      marcarError(el.carrier, el.carrierErr, t('e_carrier'));
-      primero = primero || el.carrier; ok = false;
     }
     if (!nodoActual) {
       marcarError(el.nodoBtn, el.nodoErr, t('e_nodo'));
@@ -845,7 +805,7 @@
       }
     }
     if (primero) primero.focus();
-    return ok ? { pais: paisActual, site: siteActual, carrier: carrier, nodo: nodoActual, sacas: Number(n) } : null;
+    return ok ? { pais: paisActual, site: siteActual, nodo: nodoActual, sacas: Number(n) } : null;
   }
 
   // Solo dígitos, sin ceros a la izquierda, máximo 4 cifras
@@ -880,8 +840,9 @@
 
   function guardarHist(reg, estado) {
     var h = leer(LS.hist, []);
-    h.unshift({ id: reg.id, pais: reg.pais, site: reg.site, carrier: reg.carrier, nodo: reg.nodo, sacas: reg.sacas, ts: reg.creado, estado: estado });
+    h.unshift({ id: reg.id, pais: reg.pais, site: reg.site, nodo: reg.nodo, sacas: reg.sacas, ts: reg.creado, estado: estado });
     guardar(LS.hist, h.slice(0, 30));
+    depurarHist();
   }
 
   function marcarHist(id, estado) {
@@ -896,12 +857,21 @@
     if (n) el.pendientesTexto.textContent = n === 1 ? t('pend_1') : t('pend_n', { n: n });
   }
 
-  function pintarHist() {
+  // Solo se guardan y se muestran los registros de HOY (la lista vive en el teléfono; no se descarga de internet).
+  // Los de días anteriores se borran, salvo los que siguen en la cola esperando conexión para enviarse.
+  function depurarHist() {
     var h = leer(LS.hist, []);
+    var enCola = {};
+    leer(LS.cola, []).forEach(function (r) { enCola[r.id] = true; });
+    var vigentes = h.filter(function (x) { return esHoy(x.ts) || (x.estado === 'pendiente' && enCola[x.id]); });
+    if (vigentes.length !== h.length) guardar(LS.hist, vigentes);
+  }
+
+  function pintarHist() {
+    var h = leer(LS.hist, []).filter(function (x) { return esHoy(x.ts); });
     el.recientes.hidden = h.length === 0;
     if (!h.length) return;
-    var hoy = h.filter(function (x) { return esHoy(x.ts); }).length;
-    el.recientesHoy.textContent = t('hoy', { n: hoy });
+    el.recientesHoy.textContent = t('hoy', { n: h.length });
 
     var frag = document.createDocumentFragment();
     h.slice(0, 5).forEach(function (x) {
@@ -915,7 +885,7 @@
       nombre.textContent = x.nodo;
       var meta = document.createElement('div');
       meta.className = 'recent__meta';
-      meta.textContent = [x.site, x.carrier, x.sacas + ' ' + (x.sacas === 1 ? t('saca_1') : t('saca_n')), hora(x.ts)].join(', ');
+      meta.textContent = [x.site, x.sacas + ' ' + (x.sacas === 1 ? t('saca_1') : t('saca_n')), hora(x.ts)].join(', ');
       main.appendChild(nombre);
       main.appendChild(meta);
 
@@ -962,7 +932,6 @@
     el.exitoNota.hidden = !pendiente;
     el.exitoNota.textContent = pendiente ? t('pend_nota') : '';
     el.rSite.textContent = reg.site + (p ? ' (' + p.nombre + ')' : '');
-    el.rCarrier.textContent = reg.carrier;
     el.rNodo.textContent = reg.nodo;
     el.rSacas.textContent = String(reg.sacas);
     var tiene = typeof reg.d1 === 'number';
@@ -971,7 +940,7 @@
     if (tiene) {
       el.rRef.textContent = t('ref_valor', { a: reg.d1, b: reg.t3 });
       var d1 = CONFIG.COMPARAR_CONTRA === 'D1';
-      el.rVs.textContent = textoComparacion(reg.sacas, { valor: d1 ? reg.d1 : reg.t3, r: t(d1 ? 'ref_d1' : 'ref_3d') }, ['vs_ok', 'vs_menos', 'vs_mas']);
+      el.rVs.textContent = textoComparacion(reg.sacas, { valor: d1 ? reg.d1 : reg.t3, r: t(d1 ? 'ref_d1' : 'ref_acum') }, ['vs_ok', 'vs_menos', 'vs_mas']);
     }
     el.rId.textContent = reg.id.slice(0, 8).toUpperCase();
     el.formCard.hidden = true;
@@ -988,14 +957,12 @@
 
     var reg = {
       id: gerarId(),
-      pais: d.pais, site: d.site, carrier: d.carrier, nodo: d.nodo.id, sacas: d.sacas,
+      pais: d.pais, site: d.site, nodo: d.nodo.id, sacas: d.sacas,
       d1: typeof d.nodo.d1 === 'number' ? d.nodo.d1 : null,   // solo para mostrar; el servidor los lee de la extracción
       t3: typeof d.nodo.t3 === 'number' ? d.nodo.t3 : null,
       creado: new Date().toISOString()
     };
     guardar(LS.site, { pais: reg.pais, site: reg.site });
-    guardar(LS.carrier, reg.carrier);
-    carrierGuardado = reg.carrier;
     setCargando(true);
 
     enviarRegistro(reg)
@@ -1021,7 +988,7 @@
       });
   }
 
-  // "Nuevo registro": conserva país, SVC y carrier; limpia el nodo y las sacas para el siguiente nodo
+  // "Nuevo registro": conserva país y SVC; limpia el nodo y las sacas para el siguiente nodo
   function aoNovo() {
     el.sacas.value = '';
     nodoActual = null;
@@ -1050,8 +1017,6 @@
   // ---------------------------------------------------------------------
   function iniciar() {
     pintarPaises();
-    var c = leer(LS.carrier, '');
-    if (typeof c === 'string') carrierGuardado = c;
 
     // 1) Idioma provisional según el teléfono, 2) país y su idioma
     aplicarIdioma(idiomaPorDefecto());
@@ -1101,7 +1066,6 @@
       }
     });
 
-    el.carrier.addEventListener('change', function () { limpiarCampo(el.carrier, el.carrierErr); actualizarAvance(); });
     el.sacas.addEventListener('input', function () { limpiarCampo(el.sacas, el.sacasErr); soloDigitos(); });
     el.menos.addEventListener('click', function () { sumarSacas(-1); });
     el.mas.addEventListener('click', function () { sumarSacas(1); });
@@ -1110,9 +1074,11 @@
     el.reintentar.addEventListener('click', vaciarCola);
     window.addEventListener('online', function () { pintarConexion(); vaciarCola(); if (siteActual && nodosEstado === 'error') cargarNodos(siteActual); });
     window.addEventListener('offline', pintarConexion);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) { depurarHist(); pintarHist(); } });
 
     pintarConexion();
     pintarPendientes();
+    depurarHist();
     pintarHist();
     actualizarAvance();
 
@@ -1125,20 +1091,12 @@
 
     if (siteActual) cargarNodos(siteActual);
 
-    cargarCatalogo()
-      .then(function (cat) {
-        pintarCatalogo(cat);
-        el.enviar.disabled = false;
-        actualizarAvance();
-        vaciarCola();
-      })
-      .catch(function () {
-        catalogoEstado = 'error';
-        el.carrier.replaceChildren(opcion('', ''));
-        textoPrimeraOpcion();
-        el.erroCatalogo.textContent = t('e_catalogo');
-        el.erroCatalogo.hidden = false;
-      });
+    cargarCatalogo().then(function (cat) {
+      pintarCatalogo(cat);
+      el.enviar.disabled = false;
+      actualizarAvance();
+      vaciarCola();
+    });
   }
 
   iniciar();
