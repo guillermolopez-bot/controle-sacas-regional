@@ -8,7 +8,7 @@
   //   TOKEN:   el mismo valor que pusiste en Code.gs.
   // ---------------------------------------------------------------------
   var CONFIG = {
-    API_URL: 'AKfycbzAJJA0VtLOi-hNv0b903W5Q0dG76jvx9JfzGG-dcmXeeBx-_Ay9bT6JsG1vqrlF4yU',
+    API_URL: '',
     TOKEN: 'a63f009e24790fc48f6d1f95',
     TIMEOUT_MS: 15000,               // lecturas (catálogo, nodos)
     TIMEOUT_POST_MS: 30000,          // envío de un registro (Apps Script puede tardar en guardarlo)
@@ -350,21 +350,20 @@
   // Rechaza (catch) solo ante problemas de red: esos casos se encolan.
   function enviarRegistro(reg) {
     if (DEMO) return atraso(800).then(function () { return { ok: true }; });
-    var cuerpo = JSON.stringify({
-      token: CONFIG.TOKEN,
-      id: reg.id,
-      pais: reg.pais,
-      site: reg.site,
-      nodo: reg.nodo,
-      sacas: reg.sacas,
-      creado: reg.creado
-    });
-    // text/plain evita el preflight CORS que Apps Script no soporta
-    return pedir(CONFIG.API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: cuerpo
-    }, CONFIG.TIMEOUT_POST_MS);
+    // Se envía por GET (action=registrar) y no por POST: Apps Script contesta un POST con una redirección que solo admite
+    // GET y algunos navegadores o redes reintentan con POST, lo que da "HTTP 405" aunque el registro sí se guardó.
+    // Un reintento es seguro: el servidor ignora un folio (id) que ya guardó.
+    var qs = [
+      'action=registrar',
+      'token=' + encodeURIComponent(CONFIG.TOKEN),
+      'id=' + encodeURIComponent(reg.id),
+      'pais=' + encodeURIComponent(reg.pais),
+      'site=' + encodeURIComponent(reg.site),
+      'nodo=' + encodeURIComponent(reg.nodo),
+      'sacas=' + encodeURIComponent(reg.sacas),
+      'creado=' + encodeURIComponent(reg.creado)
+    ].join('&');
+    return pedir(CONFIG.API_URL + '?' + qs, { cache: 'no-store' }, CONFIG.TIMEOUT_POST_MS);
   }
 
   // ---------------------------------------------------------------------
